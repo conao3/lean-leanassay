@@ -1,15 +1,15 @@
 <p align="center">
-  <img src="docs/assets/banner.png" alt="lean-assay: run broken implementations against your Lean theorems" width="880">
+  <img src="docs/assets/banner.png" alt="leanassay: run broken implementations against your Lean theorems" width="880">
 </p>
 
 <p align="center"><strong>Do your Lean theorems pin down your implementation?</strong></p>
 
 <p align="center">
-  <a href="https://github.com/conao3/lean-assay/tags"><img src="https://img.shields.io/github/v/tag/conao3/lean-assay" alt="Latest tag"></a>
-  <a href="https://github.com/conao3/lean-assay/actions/workflows/ci.yml"><img src="https://github.com/conao3/lean-assay/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/conao3/lean-assay" alt="License: Apache-2.0"></a>
+  <a href="https://github.com/conao3/lean-leanassay/tags"><img src="https://img.shields.io/github/v/tag/conao3/lean-leanassay" alt="Latest tag"></a>
+  <a href="https://github.com/conao3/lean-leanassay/actions/workflows/ci.yml"><img src="https://github.com/conao3/lean-leanassay/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/conao3/lean-leanassay" alt="License: Apache-2.0"></a>
   <a href="lean-toolchain"><img src="https://img.shields.io/badge/Lean-v4.35.0-blue" alt="Lean v4.35.0"></a>
-  <a href="https://github.com/conao3/lean-assay/stargazers"><img src="https://img.shields.io/github/stars/conao3/lean-assay?style=flat" alt="GitHub stars"></a>
+  <a href="https://github.com/conao3/lean-leanassay/stargazers"><img src="https://img.shields.io/github/stars/conao3/lean-leanassay?style=flat" alt="GitHub stars"></a>
 </p>
 
 <p align="center">
@@ -20,7 +20,7 @@
   <a href="#development">Development</a>
 </p>
 
-# lean-assay
+# leanassay
 
 Check whether your Lean theorems pin down your implementation, by running broken implementations
 against them.
@@ -65,7 +65,7 @@ Lean 4.35.0. Add the package to `lakefile.toml`:
 ```toml
 [[require]]
 name = "assay"
-git = "https://github.com/conao3/lean-assay"
+git = "https://github.com/conao3/lean-leanassay"
 rev = "master"
 ```
 

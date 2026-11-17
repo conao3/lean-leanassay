@@ -1,5 +1,5 @@
 {
-  description = "lean-assay: check whether Lean theorems pin down an implementation, by running broken implementations against them";
+  description = "leanassay: check whether Lean theorems pin down an implementation, by running broken implementations against them";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -25,7 +25,7 @@
         { pkgs, config, ... }:
         {
           packages.default = pkgs.stdenv.mkDerivation {
-            pname = "lean-assay";
+            pname = "leanassay";
             version = "0.1.0";
             src = pkgs.lib.fileset.toSource {
               root = ./.;

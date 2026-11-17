@@ -1,6 +1,6 @@
 # AGENTS.md
 
-lean-assay: the `#assay` command, which runs broken versions of Lean functions against the
+leanassay: the `#assay` command, which runs broken versions of Lean functions against the
 theorems about them.
 
 ## Layout
