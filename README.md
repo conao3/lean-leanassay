@@ -114,7 +114,9 @@ A broken version is a `HOLE` when every column that depends on it held and, on a
 satisfies the hypotheses of some column, a function it changes returns a different value from the
 original. The warning names that theorem and input. A version whose output equals the original on
 every value of its arguments (when they are few enough to try them all), or on every input tried
-that satisfies the hypotheses of the columns, is counted as equivalent and isn't shown.
+that satisfies the hypotheses of the columns, is counted as equivalent and isn't shown. Outputs are
+compared where their type has decidable equality; a version that holds every column while none of
+the outputs in the statements can be compared is reported as `untested`.
 
 Each broken version has `assay.timeout` milliseconds to run the columns. A version that isn't
 killed before then is reported as `timeout`.
@@ -174,7 +176,8 @@ which adds the theorems that kill the holes `#assay` found in the earlier files.
 `Examples/Forms/` holds small files in the shapes of other corpora: functions that take a
 precondition proof, a property stated as `def P : Prop`, and a theorem in another module than the
 function, about a function that calls it (`Split/`), and the shapes of statements that run without a
-`Decidable` instance, over a type variable (`Shapes.lean`). `Examples/Verina/A35.lean` is the
+`Decidable` instance, over a type variable (`Shapes.lean`), and a function whose output has no
+decidable equality (`Uncompared.lean`). `Examples/Verina/A35.lean` is the
 task `verina_advanced_35` of [VERINA](https://github.com/sunblaze-ucb/verina) at commit `66b3ce5`,
 without its benchmark markers.
 

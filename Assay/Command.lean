@@ -356,16 +356,20 @@ def assay (fns : Array Name) (named : Option (Array Name)) (ref : Syntax) : Comm
         if !held || !cells.any (· matches .held) then
           return { mutant := m, verdict := .inconclusive, cells }
         let mut differs := none
+        let mut compared := false
         for c in clauses, b in baseline, count in counts do
           let usable := match b with | .ran s => s.counterexample.isNone | _ => false
           if !usable || differs.isSome then continue
           let some stmt ← liftTermElabM (do differsUnder renamed (← specialize c.statement)) | continue
+          compared := true
           if let .ran s ← runClause stmt count deadline then
             if s.timedOut then timedOut := true
             differs := s.counterexample.map (c.label, ·)
         match differs with
         | some (t, d) => return { mutant := m, verdict := .hole t d, cells }
-        | none => return { mutant := m, verdict := if timedOut then .timeout else .equivalent, cells })
+        | none =>
+          let verdict := if timedOut then .timeout else if compared then .equivalent else .inconclusive
+          return { mutant := m, verdict, cells })
         fun _ => return { mutant := m, verdict := .stillborn, cells := #[] }
       results := results.push r
   let shown := results.filter fun r => r.verdict matches .killed | .hole _ _ | .inconclusive | .timeout
