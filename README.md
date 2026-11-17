@@ -1,3 +1,25 @@
+<p align="center">
+  <img src="docs/assets/banner.png" alt="lean-assay: run broken implementations against your Lean theorems" width="880">
+</p>
+
+<p align="center"><strong>Do your Lean theorems pin down your implementation?</strong></p>
+
+<p align="center">
+  <a href="https://github.com/conao3/lean-assay/tags"><img src="https://img.shields.io/github/v/tag/conao3/lean-assay" alt="Latest tag"></a>
+  <a href="https://github.com/conao3/lean-assay/actions/workflows/ci.yml"><img src="https://github.com/conao3/lean-assay/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/conao3/lean-assay" alt="License: Apache-2.0"></a>
+  <a href="lean-toolchain"><img src="https://img.shields.io/badge/Lean-v4.35.0-blue" alt="Lean v4.35.0"></a>
+  <a href="https://github.com/conao3/lean-assay/stargazers"><img src="https://img.shields.io/github/stars/conao3/lean-assay?style=flat" alt="GitHub stars"></a>
+</p>
+
+<p align="center">
+  <a href="#install">Install</a> ·
+  <a href="#what-it-checks">What it checks</a> ·
+  <a href="#options">Options</a> ·
+  <a href="#limits">Limits</a> ·
+  <a href="#development">Development</a>
+</p>
+
 # lean-assay
 
 Check whether your Lean theorems pin down your implementation, by running broken implementations
@@ -6,8 +28,10 @@ against them.
 A proof that goes through says nothing about the implementation if a broken implementation
 satisfies the same theorems. `#assay f` breaks `f` in many small ways, runs every theorem about
 `f` against each broken version, and reports the broken versions that satisfy every theorem but
-change what `f` returns on an input that satisfies a theorem's hypotheses. It does not need the proofs: it decides the statements on concrete
-inputs, so it also works on theorems that are still `sorry`.
+change what `f` returns on an input that satisfies a theorem's hypotheses.
+
+It doesn't need the proofs: it decides the statements on concrete inputs, so it also works on
+theorems that are still `sorry`.
 
 ```lean
 import Assay
@@ -31,7 +55,7 @@ step: 19:3: add | .begun, .begin => some .begun               ·   ·   ·   · 
 warning: hole: `step: 19:3: add | .begun, .begin => some .begun` satisfies every theorem but changes the output on an input that satisfies the hypotheses of begun_never_returns_to_created: k := proved.ProgressKind.begin
 ```
 
-The full outputs for three files of [lsp-touchstone](https://github.com/conao3/rust-lsp-touchstone)
+The full outputs for 3 files of [lsp-touchstone](https://github.com/conao3/rust-lsp-touchstone)
 are the tests in [`AssayTest/`](AssayTest).
 
 ## Install
@@ -64,9 +88,9 @@ For `#assay f g …`:
    - A hypothesis may be passed to the functions as a precondition (`f xs h` with
      `h : f_precond xs`). A column computes its conclusion only on inputs that satisfy the
      hypotheses, with the proofs replaced by the axiom `Assay.assumed`, which the compiler erases.
-2. It runs every column on the original functions. A column that fails on the original or is not
+2. It runs every column on the original functions. A column that fails on the original or isn't
    executable is reported, and is `?` for every broken version it depends on, so that such a
-   version is not reported as a hole. A column whose hypotheses no input satisfies is reported as
+   version isn't reported as a hole. A column whose hypotheses no input satisfies is reported as
    possibly vacuous.
 3. It breaks each function:
    - whole replacements: `default`, each constructor of the result type (and `some c` for each
@@ -79,20 +103,20 @@ For `#assay f g …`:
      an `if`.
 4. Each broken version is elaborated next to the original under a new name, together with the
    definitions between it and the theorems: those the statements reach that call it, directly or
-   through each other, in any module of the same package. Versions that do not typecheck, or that
+   through each other, in any module of the same package. Versions that don't typecheck, or that
    raise an error when they are run, are counted as stillborn.
 5. Every column is run on the broken version. A cell is `✗` when an input satisfies the hypotheses
    but not the conclusion, `·` when enough inputs satisfied the hypotheses and the conclusion held,
-   `?` when too few inputs satisfied the hypotheses or the column does not run, and `-` when the
-   column does not depend on the function.
+   `?` when too few inputs satisfied the hypotheses or the column doesn't run, and `-` when the
+   column doesn't depend on the function.
 
 A broken version is a `HOLE` when every column that depends on it held and, on an input that
 satisfies the hypotheses of some column, a function it changes returns a different value from the
 original. The warning names that theorem and input. A version whose output equals the original on
 every value of its arguments (when they are few enough to try them all), or on every input tried
-that satisfies the hypotheses of the columns, is counted as equivalent and not shown.
+that satisfies the hypotheses of the columns, is counted as equivalent and isn't shown.
 
-Each broken version has `assay.timeout` milliseconds to run the columns. A version that is not
+Each broken version has `assay.timeout` milliseconds to run the columns. A version that isn't
 killed before then is reported as `timeout`.
 
 Inputs are random, from a fixed seed, so a run always gives the same table. When every binder has
