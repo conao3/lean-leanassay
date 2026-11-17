@@ -6,7 +6,7 @@ theorems about them.
 ## Layout
 
 - `Assay/Runtime.lean`: the values a check returns and the loops that run it (random or exhaustive).
-- `Assay/Sample.lean`: generators that replace plausible's defaults (`Char`).
+- `Assay/Sample.lean`: generators that replace plausible's defaults (`Char`), and the parts of the generator written for a recursive type.
 - `Assay/Check.lean`: a theorem as clauses, and a clause as a generated, evaluated check.
 - `Assay/Collect.lean`: the theorems about the audited functions, and the instances their types need.
 - `Assay/Source.lean`: the source of a declaration, and elaborating an edited copy under a new name.

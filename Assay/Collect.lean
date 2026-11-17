@@ -18,7 +18,8 @@ def moduleOf (env : Environment) (n : Name) : Name :=
 
 /-- Whether a theorem is one that Lean generated (equation lemmas, induction principles, …). -/
 def isGenerated (env : Environment) (fns : Array Name) (n : Name) : Bool :=
-  n.isInternalDetail || fns.contains n.getPrefix || isAuxRecursor env n || isNoConfusion env n
+  n.isInternalDetail || fns.contains n.getPrefix || isReservedName env n || isAuxRecursor env n
+    || isNoConfusion env n
 
 /-- The definitions of propositions (`def P : Prop`, `def Q (x : α) : Prop`) in the given modules. -/
 def propDefsIn (mods : Array Name) : MetaM NameSet := do
@@ -95,9 +96,70 @@ where
         if j != i then (out, seen) ← visit j out seen
     return (out.push i, seen)
 
-/-- Derives `Repr`, `DecidableEq`, `Arbitrary` and `Shrinkable` for a type that lacks them, where a
-deriving handler applies. A type left without an instance makes the checks that need it not
-executable, which the report says. -/
+open TSyntax.Compat in
+/-- The commands that define a generator for a recursive type (a constructor field's type mentions
+the type or one declared with it in a `mutual` block) and make it the `Arbitrary` instance, or
+`none` for a type that is not recursive. The generator shrinks the size on the way to every
+recursive field (`Gen.direct`, `Gen.nested`), including the fields that hold the type inside
+another one, such as `children : List Node`, so it stops; plausible's derived generator spends its
+fuel only on the fields whose type is the type itself, and draws the others at the full size. -/
+def recursiveArbitrary (ty : Name) : TermElabM (Option (Array Syntax)) := do
+  let info ← getConstInfoInduct ty
+  let block := info.all.toArray
+  let genOf (t : Name) := mkIdent (t ++ `assayArbitrary)
+  let fuel := mkIdent `fuel
+  let mut recursive := false
+  let mut defs : Array Command := #[]
+  let mut inst := none
+  for t in block do
+    let ti ← getConstInfoInduct t
+    let argNames ← Deriving.mkInductArgNames ti
+    let binders := (← Deriving.mkImplicitBinders argNames)
+      ++ (← Deriving.mkInstImplicitBinders ``Plausible.Arbitrary ti argNames)
+    let target ← Deriving.mkInductiveApp ti argNames
+    let mut leaves : Array Term := #[]
+    let mut recs : Array Term := #[]
+    for c in ti.ctors do
+      let kinds ← forallTelescopeReducing (← getConstInfoCtor c).type fun xs _ =>
+        (xs.extract ti.numParams xs.size).mapM fun x => do
+          let fieldType ← inferType x
+          if fieldType.getAppFn.constName?.any block.contains then return some true
+          if fieldType.getUsedConstants.any block.contains then return some false
+          return none
+      let k := (kinds.filter (·.isSome)).size
+      let mut doElems := #[]
+      let mut fields := #[]
+      for kind in kinds, i in [0:kinds.size] do
+        let field := mkIdent (.mkSimple s!"a{i}")
+        fields := fields.push field
+        let gen ← match kind with
+          | some true => `(Assay.Gen.direct $(quote k) Plausible.Arbitrary.arbitrary)
+          | some false => `(Assay.Gen.nested Plausible.Arbitrary.arbitrary)
+          | none => `(Plausible.Arbitrary.arbitrary)
+        doElems := doElems.push (← `(doElem| let $field:ident ← $gen:term))
+      let params := Array.replicate ti.numParams (← `(_))
+      doElems := doElems.push (← `(doElem| return @$(mkCIdent c) $params* $fields*))
+      let body ← `((do $[$doElems:doElem]*))
+      if k == 0 then leaves := leaves.push body else recs := recs.push body
+    if !recs.isEmpty then recursive := true
+    let mut body ← `(Assay.Gen.pick #[$leaves,*] #[$recs,*])
+    for u in block do
+      let instType ← `(Plausible.Arbitrary $(← Deriving.mkInductiveApp (← getConstInfoInduct u) argNames))
+      body ← `(let _ : $instType := ⟨Assay.Gen.step $(genOf u) $fuel⟩; $body)
+    defs := defs.push (← `(partial def $(genOf t):ident $binders:bracketedBinder* ($fuel : Nat) :
+      Plausible.Gen $target := $body))
+    if t == ty then
+      inst := some (← `(instance $binders:implicitBinder* : Plausible.Arbitrary $target :=
+        ⟨$(genOf t) Assay.floorFuel⟩))
+  if !recursive then return none
+  let some instCmd := inst | return none
+  if (← getEnv).contains (ty ++ `assayArbitrary) then return some #[instCmd]
+  return some #[← `(mutual $defs:command* end), instCmd]
+
+/-- Gives a type that lacks them `Repr`, `DecidableEq`, `Arbitrary` and `Shrinkable`: the deriving
+handler's instance where one applies, and for the `Arbitrary` of a recursive type the generator of
+`recursiveArbitrary`. A type left without an instance makes the checks that need it not executable,
+which the report says. -/
 def ensureInstances (ty : Name) : CommandElabM Unit := do
   let id := mkIdent ty
   let missing (cls : Name) : CommandElabM Bool := liftTermElabM do
@@ -105,16 +167,19 @@ def ensureInstances (ty : Name) : CommandElabM Unit := do
       let inst ← mkAppM cls #[mkConst ty]
       return (← trySynthInstance inst) matches .none
     catch _ => return true
-  for (cls, cmd) in [
-      (``Repr, ← `(deriving instance Repr for $id)),
-      (``DecidableEq, ← `(deriving instance DecidableEq for $id)),
-      (``Plausible.Arbitrary, ← `(deriving instance Plausible.Arbitrary for $id)),
-      (``Plausible.Shrinkable, ← `(instance : Plausible.Shrinkable $id := {}))] do
+  let arbitrary ← match ← liftTermElabM (recursiveArbitrary ty) with
+    | some cmds => pure (cmds.map (⟨·⟩ : Syntax → Command))
+    | none => pure #[← `(deriving instance Plausible.Arbitrary for $id)]
+  for (cls, cmds) in [
+      (``Repr, #[← `(deriving instance Repr for $id)]),
+      (``DecidableEq, #[← `(deriving instance DecidableEq for $id)]),
+      (``Plausible.Arbitrary, arbitrary),
+      (``Plausible.Shrinkable, #[← `(instance : Plausible.Shrinkable $id := {})])] do
     if ← missing cls then
       let before := (← get).messages
       let env ← getEnv
       modify fun s => { s with messages := {} }
-      elabCommand cmd
+      cmds.forM elabCommand
       if (← get).messages.hasErrors then setEnv env
       modify fun s => { s with messages := before }
 

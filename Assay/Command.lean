@@ -320,7 +320,7 @@ def assay (fns : Array Name) (named : Option (Array Name)) (ref : Syntax) : Comm
     let (src, cmd) := sources[0]!
     let reps ← liftTermElabM <| replacements f
     let mutants := reps.map (fun (l, v) => { fn := f, label := s!"{f.componentsRev.head!} := {l}", change := .replace v : Mutant })
-      ++ (editMutants src f cmd).map fun m => { m with label := s!"{f.componentsRev.head!}: {m.label}" }
+      ++ (editMutants src f (← declarationOf src cmd f)).map fun m => { m with label := s!"{f.componentsRev.head!}: {m.label}" }
     for m in mutants do
       let r : MutantResult ← withoutModifyingEnv <| tryCatch (do
         if !(← elabMutant m renamed sources) then

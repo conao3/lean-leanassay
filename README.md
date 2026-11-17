@@ -72,7 +72,8 @@ rev = "master"
 Run `#assay` in a file of its own: it derives the instances it needs (`Repr`, `DecidableEq`,
 plausible's `Arbitrary` and `Shrinkable`) for the types of the audited package that the statements
 use, and for the types of their fields first, where a deriving handler applies; those instances
-stay in that file.
+stay in that file. For a recursive type it writes the `Arbitrary` generator itself (see
+[What it checks](#what-it-checks)). An instance you declare before `#assay` is used as it is.
 
 ## What it checks
 
@@ -132,6 +133,16 @@ a type whose constructors have no fields, and the product of their sizes is at m
 gets more inputs, up to `assay.maxSamples`. The `Char` generator mixes ASCII with characters of
 every UTF-8 and UTF-16 width and the code points at the boundaries between widths.
 
+The generator of a recursive type (a constructor field's type mentions the type, or one declared
+with it in a `mutual` block) shrinks the size on the way to every recursive field. A field of the
+type itself gets the size left after the constructor, split among the constructor's recursive
+fields. A field that holds the type inside another one (`children : List Node`, `Option Node`)
+gets the square root of the size, for the container and the values in it: a type with one such
+field comes out with 1 to 15 nodes at size 30, the default largest size. At size 0 a constructor
+without recursive fields is picked, or the containers come out empty. This covers nested
+inductive types and recursive structures, for which plausible's derived generator draws the
+container at the full size at every level and doesn't stop.
+
 ## Options
 
 | Option | Default | Meaning |
@@ -157,6 +168,17 @@ every UTF-8 and UTF-16 width and the code points at the boundaries between width
   universes to 0, and its instance binders to the instances of `Int`.
 - Random inputs only show that no counterexample was found among the inputs tried. "Equivalent"
   means the same output on every input tried.
+- The outputs of a nested inductive type (one with a field such as `List Node`) are not compared:
+  Lean's deriving handler for `DecidableEq` doesn't apply to it, so a broken version that returns
+  such a type and holds every column is `untested` unless the statements also mention a function
+  with a comparable output, or you declare `DecidableEq` for the type.
+- For a function of a `mutual` block replaced whole by a wrong one, the other functions of the
+  block are not elaborated around the replacement, so a column that mentions one of them shows
+  `?`. The edits of its body are elaborated with the whole block and run on every column.
+- Without `using`, the theorems about a function are those that mention it or a definition whose
+  compiled body calls it. Structural recursion compiles the calls between the functions of a
+  `mutual` block away, so a theorem that mentions only another function of the block is not
+  found: audit the functions of the block in one `#assay`, or name the theorems with `using`.
 - The broken versions are elaborated from the source text, with the `open` commands of the file
   and the `variable` commands before the declaration.
 

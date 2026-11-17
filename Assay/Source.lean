@@ -73,6 +73,18 @@ def commandOf (src : SourceFile) (n : Name) : CommandElabM Syntax := do
     if s ≤ pos && pos < e then return cmd
   throwError "cannot find the command that declares {n}"
 
+/-- The declaration of `n` in its command: the command, or the declaration of a `mutual` block
+that declares `n`. -/
+def declarationOf (src : SourceFile) (cmd : Syntax) (n : Name) : CommandElabM Syntax := do
+  if !cmd.isOfKind ``Command.mutual then return cmd
+  let some ranges ← findDeclarationRanges? n | return cmd
+  let pos := (FileMap.ofString src.text).ofPosition ranges.range.pos
+  for decl in cmd[1].getArgs do
+    let some s := decl.getPos? | continue
+    let some e := decl.getTailPos? | continue
+    if s ≤ pos && pos < e then return decl
+  return cmd
+
 /-- The text of a syntax node. -/
 def textOf (src : SourceFile) (stx : Syntax) : String :=
   match stx.getPos?, stx.getTailPos? with
@@ -152,25 +164,23 @@ where
       else args.foldl (fun acc a => go a acc) acc
     | _ => acc
 
-/-- The namespace a declaration was written in: its name without the name written in its
-`declId`. -/
-partial def declNamespace (cmd : Syntax) (n : Name) : Name := Id.run do
-  let some declId := findDeclId cmd | return n.getPrefix
-  let written := declId[0].getId
-  let mut ns := n
-  for _ in written.components do
-    ns := ns.getPrefix
-  return ns
-where
-  findDeclId (stx : Syntax) : Option Syntax :=
-    if stx.isOfKind ``Command.declId then some stx
-    else stx.getArgs.findSome? findDeclId
-
 /-- The names written in the `declId`s of a command: one, or each declaration of a `mutual`
 block. -/
 partial def declIdsOf (stx : Syntax) : Array Name :=
   if stx.isOfKind ``Command.declId then #[stx[0].getId]
   else stx.getArgs.foldl (fun acc a => acc ++ declIdsOf a) #[]
+
+/-- The namespace a declaration was written in: its name without the name written in its
+`declId`, which in a `mutual` block is the longest one that `n` ends with. -/
+def declNamespace (cmd : Syntax) (n : Name) : Name := Id.run do
+  let ids := declIdsOf cmd
+  let matching := ids.filter (·.isSuffixOf n)
+  let longest := matching.foldl (fun a b => if b.getNumParts > a.getNumParts then b else a) .anonymous
+  let some written := if matching.isEmpty then ids[0]? else some longest | return n.getPrefix
+  let mut ns := n
+  for _ in written.components do
+    ns := ns.getPrefix
+  return ns
 
 /-- The `open` commands of a source file. -/
 def opensOf (src : SourceFile) : Array String :=
