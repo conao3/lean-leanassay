@@ -387,6 +387,9 @@ def assay (fns : Array Name) (named : Option (Array Name)) (ref : Syntax) : Comm
   lines := lines.push ""
   lines := lines.push s!"{results.size} mutants: {count (· matches .killed)} killed, {holes.size} holes, {count (· matches .inconclusive)} untested, {count (· matches .equivalent)} equivalent, {count (· matches .timeout)} timed out, {count (· matches .stillborn)} stillborn"
   logInfoAt ref (MessageData.ofFormat (Std.Format.text ("\n".intercalate lines.toList)))
+  for f in fns do
+    if !results.any fun r => r.mutant.fn == f && r.verdict matches .killed then
+      warnings := warnings.push m!"no broken version of `{f}` was killed; the theorems are not shown to constrain it"
   for w in warnings do
     logWarningAt ref w
   for h in holes do

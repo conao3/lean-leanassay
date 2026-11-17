@@ -123,7 +123,7 @@ def casesBool (e : Expr) (k : Nat → Array Expr → MetaM Expr) : MetaM Expr :=
   if info.numIndices != 0 then throwError "an inductive family"
   let params := ty.getAppArgs.extract 0 info.numParams
   let motive := Expr.lam `x ty (mkConst ``Bool) .default
-  let mut app := mkAppN (mkConst (mkCasesOnName ind) (levelOne :: us)) (params ++ #[motive, e])
+  let mut app := mkAppN (mkConst (mkCasesOnName ind) (Level.one :: us)) (params ++ #[motive, e])
   for ctor in info.ctors, i in [0:info.ctors.length] do
     let cty ← instantiateForall (← getConstInfo ctor).type params
     let minor ← forallTelescope cty fun fields _ => do mkLambdaFVars fields (← k i fields)
@@ -288,12 +288,12 @@ def eraseProofs (hyps : Array Expr) (e : Expr) : MetaM Expr := do
 `Int`, and its instance binders given the instances found for `Int`. -/
 partial def specialize (stmt : Expr) : MetaM Expr := do
   let ps := (collectLevelParams {} stmt).params.toList
-  go (stmt.instantiateLevelParams ps (ps.map fun _ => levelZero))
+  go (stmt.instantiateLevelParams ps (ps.map fun _ => Level.zero))
 where
   go (e : Expr) : MetaM Expr := do
     let .forallE n d b bi := e | return e
     let d ← instantiateMVars d
-    if (← whnfR d).isType && (← whnfR d) == mkSort levelOne then
+    if (← whnfR d).isType && (← whnfR d) == mkSort Level.one then
       return ← go (b.instantiate1 (mkConst ``Int))
     if bi.isInstImplicit then
       if let .some inst ← trySynthInstance d then return ← go (b.instantiate1 inst)

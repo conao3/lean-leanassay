@@ -119,6 +119,11 @@ that satisfies the hypotheses of the columns, is counted as equivalent and isn't
 Each broken version has `assay.timeout` milliseconds to run the columns. A version that isn't
 killed before then is reported as `timeout`.
 
+A function none of whose broken versions is killed gets a warning: the theorems are not shown to
+constrain it. With the warnings for holes and for hypotheses that no input satisfies, this makes
+`lake build --wfail` on a file of `#assay` commands a check that the theorems about each audited
+function rule out a broken version and leave no hole among the versions tried.
+
 Inputs are random, from a fixed seed, so a run always gives the same table. When every binder has
 a type whose constructors have no fields, and the product of their sizes is at most
 `assay.enumLimit`, every input is tried instead. A column whose hypotheses few random inputs satisfy

@@ -17,6 +17,8 @@ clampU8: 4:29: > ↦ <                    ·    HOLE
 
 15 mutants: 0 killed, 8 holes, 0 untested, 7 equivalent, 0 timed out, 0 stillborn
 ---
+warning: no broken version of `Forms.clampU8` was killed; the theorems are not shown to constrain it
+---
 warning: hole: `clampU8 := fun _ => default` satisfies every theorem but changes the output on an input that satisfies the hypotheses of clampInRange_proven: n := 1
 ---
 warning: hole: `clampU8 := fun _ => zero` satisfies every theorem but changes the output on an input that satisfies the hypotheses of clampInRange_proven: n := 1

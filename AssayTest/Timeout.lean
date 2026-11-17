@@ -24,6 +24,8 @@ clampU8: 4:40: 255 ↦ 256                ?    timeout
 clampU8: 4:40: 255 ↦ 254                ?    timeout
 
 15 mutants: 0 killed, 0 holes, 0 untested, 0 equivalent, 15 timed out, 0 stillborn
+---
+warning: no broken version of `Forms.clampU8` was killed; the theorems are not shown to constrain it
 -/
 #guard_msgs in
 #assay Forms.clampU8
