@@ -13,10 +13,10 @@
 </p>
 
 <p align="center">
-  <a href="#install">Install</a> ·
-  <a href="#what-it-checks">What it checks</a> ·
-  <a href="#options">Options</a> ·
-  <a href="#limits">Limits</a> ·
+  <a href="#install">Install</a> |
+  <a href="#what-it-checks">What it checks</a> |
+  <a href="#options">Options</a> |
+  <a href="#limits">Limits</a> |
   <a href="#development">Development</a>
 </p>
 
