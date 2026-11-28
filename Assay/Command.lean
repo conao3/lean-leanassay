@@ -221,9 +221,10 @@ def elabMutant (m : Mutant) (renamed : Array Name) (sources : Array (SourceFile 
 def pad (s : String) (w : Nat) : String :=
   s ++ "".pushn ' ' (w - s.length)
 
-/-- Runs a clause until the monotonic clock passes `deadline` (milliseconds). -/
-def runClause (stmt : Expr) (count deadline : Nat) : CommandElabM Outcome :=
-  liftTermElabM <| runStatement stmt count deadline
+/-- Runs a clause until the monotonic clock passes `deadline` (milliseconds). With `onlyAll`, a
+clause whose inputs are too many to try them all is untestable. -/
+def runClause (stmt : Expr) (count deadline : Nat) (onlyAll := false) : CommandElabM Outcome :=
+  liftTermElabM <| runStatement stmt count deadline onlyAll
 
 /-- The number of random inputs for a clause: enough that `minSatisfied` inputs are expected to
 satisfy its hypotheses four times over, judging by how many satisfied them on the original functions. -/
@@ -326,7 +327,7 @@ def assay (fns : Array Name) (named : Option (Array Name)) (ref : Syntax) : Comm
         if !(← elabMutant m renamed sources) then
           return { mutant := m, verdict := .stillborn, cells := #[] }
         let deadline := (← IO.monoMsNow) + timeout
-        let same ← runClause (← liftTermElabM <| sameOutput f) samples deadline
+        let same ← runClause (← liftTermElabM <| sameOutput f) samples deadline (onlyAll := true)
         if let .ran s := same then
           if s.counterexample.isNone && s.exhaustive then
             return { mutant := m, verdict := .equivalent, cells := #[] }

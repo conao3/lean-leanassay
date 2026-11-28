@@ -300,8 +300,9 @@ where
     withLocalDecl n bi d fun x => do mkForallFVars #[x] (← go (b.instantiate1 x))
 
 /-- Builds and runs the check of a closed proposition `∀ xs, H₁ → … → Hₘ → C`, stopping when the
-monotonic clock passes `deadline` (milliseconds). -/
-def runStatement (stmt : Expr) (count deadline : Nat) : MetaM Outcome := do
+monotonic clock passes `deadline` (milliseconds). With `onlyAll`, a proposition whose inputs are too
+many to try them all is not run and is untestable. -/
+def runStatement (stmt : Expr) (count deadline : Nat) (onlyAll := false) : MetaM Outcome := do
   let opts ← getOptions
   try
     forallTelescope (← specialize stmt) fun xs body => do
@@ -333,6 +334,7 @@ def runStatement (stmt : Expr) (count deadline : Nat) : MetaM Outcome := do
           acc ← mkAppM ``List.flatMap #[← mkLambdaFVars #[x] acc, lst]
         let run := mkApp2 (mkConst ``Assay.runAll) acc (toExpr deadline)
         return .ran (← (← evalSummary (← instantiateMVars run)))
+      if onlyAll then throwError "the inputs are too many to try them all"
       let gen ← mkAppOptM ``Pure.pure #[mkConst ``Plausible.Gen [0], none, none, res]
       let mut acc := gen
       for x in binders.reverse do
